@@ -123,3 +123,6 @@ com.example.bookfinder
 - Lacks Compose UI test coverage
 
 - Accessibility improvements needed (content descriptions, offline badge)
+
+### Mobile Screen Shots
+<img src="screenshots/search.jpg" width="250" alt="Search Screen"/> | <img src="screenshots/detail.jpg" width="250" alt="Detail Screen"/> | <img src="screenshots/popular.jpg" width="250" alt="Popular Screen"/>
