@@ -48,131 +48,12 @@ fun LocalDetailScreenUI(title: String, viewModel: MainViewModel, navController: 
             CircularProgressIndicator()
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            TopSection(
-                imageUrl = state?.imageUrl ?: "",
-                onBackClicked = { navController.popBackStack() }
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-50).dp)
-                    .padding(horizontal = 24.dp)
-            ) {Card(
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 24.dp)
-                ) {
-                    DetailRow(
-                        icon = Icons.Default.Person,
-                        label = "AUTHOR",
-                        value = state?.author ?: "N/A"
-                    )
-                    Divider(modifier = Modifier.padding(horizontal = 24.dp), color = Color.Gray.copy(alpha = 0.2f))
-                    DetailRow(
-                        icon = Icons.Default.Book,
-                        label = "TITLE",
-                        value = state?.title ?: "N/A"
-                    )
-                    Divider(modifier = Modifier.padding(horizontal = 24.dp), color = Color.Gray.copy(alpha = 0.2f))
-                    DetailRow(
-                        icon = Icons.Default.CalendarToday,
-                        label = "FIRST PUBLISHED",
-                        value = state?.year ?: "N/A"
-                    )
-                    Divider(modifier = Modifier.padding(horizontal = 24.dp), color = Color.Gray.copy(alpha = 0.2f))
-                    DetailRow(
-                        icon = Icons.Default.Language,
-                        label = "LANGUAGE",
-                        value = state?.language ?: "N/A"
-                    )
-                }
-            }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopSection(imageUrl: String, onBackClicked: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF86C5D8),
-                        Color(0xFFC5E3EE)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        AsyncImage(model = imageUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-        )
-        IconButton(
-            onClick = onBackClicked,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.White)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color(0xFF86C5D8)
-            )
-        }
-    }
-}
-
-@Composable
-private fun DetailRow(icon: ImageVector, label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE3F2F7)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = Color(0xFF86C5D8),
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                color = Color.Gray,
-                letterSpacing = 1.sp
-            )
-            Text(
-                text = value,
-                fontSize = 18.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        DetailScreenContent(book = Doc(
+            title = state?.title ?: "N/A",
+            author_name = listOf(state?.author ?: "N/A"),
+            first_publish_year = state?.year?.toIntOrNull(),
+            language = listOf(state?.language ?: "N/A"),
+        ), onBackClicked = {navController.popBackStack()}, imageUrl = state?.imageUrl)
     }
 }
 
@@ -242,13 +123,13 @@ fun DetailScreenUI(title: String, viewModel: MainViewModel, navController: NavCo
 }
 
 @Composable
-private fun DetailScreenContent(book: Doc, onBackClicked: () -> Unit) {
+private fun DetailScreenContent(book: Doc,imageUrl: String? = null, onBackClicked: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val imageUrl = "https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg"
+        val imageUrl = imageUrl ?: "https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg"
         Box(
             modifier = Modifier
                 .fillMaxWidth()
