@@ -54,7 +54,7 @@ import kotlin.collections.firstOrNull
 @Composable
 fun SearchScreenUI(viewModel: MainViewModel = hiltViewModel(),navController: NavController) {
     val query by viewModel.query.collectAsState()
-    val localBookState by viewModel.getSavedBook.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     val lazyPagingItems: LazyPagingItems<Doc> = viewModel.bookPagingDataFLow.collectAsLazyPagingItems()
     Column(modifier = Modifier
@@ -82,36 +82,65 @@ fun SearchScreenUI(viewModel: MainViewModel = hiltViewModel(),navController: Nav
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
 
             if (query.isBlank()){
-                if (localBookState.isNotEmpty()){
-                    item {
-                        Text("Recently Viewed Books")
-                    }
-                    items(localBookState, key = { it.id }){
-                        BookList(
-                            Doc(
-                                title = it.title,
-                                author_name = listOf(it.author),
-                                first_publish_year = it.year.toIntOrNull()
-                            ), imageUrl = it.imageUrl,showDeleteButton = true, onDelete = {
-                                viewModel.deleteBook(it)
+                    when(val state = uiState){
+                        is MainViewModel.LocalState.Empty ->{
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("No Recently Viewed Books Yet")
+                                }
                             }
-                        ) {
-                            navController.navigate(LocalDetailScreen(tittle = it.title))
+                        }
+                        is MainViewModel.LocalState.Content -> {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            ) {
+                                item {
+                                    Text("Recently Viewed Books")
+                                }
+                                items(state.books.size, key = { state.books[it].id }){ index ->
+                                    val book = state.books[index]
+                                    BookList(Doc(
+                                        title = book.title,
+                                        author_name = listOf(book.author),
+                                        first_publish_year = book.year.toIntOrNull()
+                                    ), onClick = {
+                                        navController.navigate(LocalDetailScreen(tittle = book.title))
+                                    }, imageUrl = book.imageUrl, showDeleteButton = true, onDelete = {
+                                        viewModel.deleteBook(book)
+                                    })
+                                }
+                            }
+                        }
+                        is MainViewModel.LocalState.Error -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(state.message)
+                                }
+                            }
+                        }
+                        is MainViewModel.LocalState.Loading -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
                         }
                     }
-                }else{
-                    item {
-                        Column(verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxSize()) {
-                            Text("No Recently Viewed Books")
-                        }
-                    }
-                }
             }else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
 
                 items(lazyPagingItems.itemCount, key = { index ->
                     lazyPagingItems.peek(index)?.key ?: index
