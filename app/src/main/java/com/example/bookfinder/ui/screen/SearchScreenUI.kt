@@ -26,16 +26,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,14 +56,34 @@ import com.example.bookfinder.MainViewModel
 import com.example.bookfinder.data.model.searchresponse.Doc
 import com.example.bookfinder.ui.navigation.DetailScreen
 import com.example.bookfinder.ui.navigation.LocalDetailScreen
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlin.collections.firstOrNull
 
 @Composable
 fun SearchScreenUI(viewModel: MainViewModel = hiltViewModel(),navController: NavController) {
     val query by viewModel.query.collectAsState()
-    val localBookState by viewModel.getSavedBook.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val snackState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(true) {
+        viewModel.localEvent.collectLatest {
+            when (it) {
+                is MainViewModel.LocalEvent.OnBookDelete -> {
+                    scope.launch {
+                        snackState.showSnackbar("Removed")
+                    }
+                }
+                is MainViewModel.LocalEvent.ShowError -> {
+                    Toast.makeText(navController.context, it.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     val lazyPagingItems: LazyPagingItems<Doc> = viewModel.bookPagingDataFLow.collectAsLazyPagingItems()
+    Box{
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(horizontal = 16.dp), verticalArrangement = Arrangement.Top) {
@@ -82,36 +109,65 @@ fun SearchScreenUI(viewModel: MainViewModel = hiltViewModel(),navController: Nav
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
 
             if (query.isBlank()){
-                if (localBookState.isNotEmpty()){
-                    item {
-                        Text("Recently Viewed Books")
-                    }
-                    items(localBookState, key = { it.id }){
-                        BookList(
-                            Doc(
-                                title = it.title,
-                                author_name = listOf(it.author),
-                                first_publish_year = it.year.toIntOrNull()
-                            ), imageUrl = it.imageUrl,showDeleteButton = true, onDelete = {
-                                viewModel.deleteBook(it)
+                    when(val state = uiState){
+                        is MainViewModel.LocalState.Empty ->{
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("No Recently Viewed Books Yet")
+                                }
                             }
-                        ) {
-                            navController.navigate(LocalDetailScreen(tittle = it.title))
+                        }
+                        is MainViewModel.LocalState.Content -> {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            ) {
+                                item {
+                                    Text("Recently Viewed Books")
+                                }
+                                items(state.books.size, key = { state.books[it].id }){ index ->
+                                    val book = state.books[index]
+                                    BookList(Doc(
+                                        title = book.title,
+                                        author_name = listOf(book.author),
+                                        first_publish_year = book.year.toIntOrNull()
+                                    ), onClick = {
+                                        navController.navigate(LocalDetailScreen(tittle = book.title))
+                                    }, imageUrl = book.imageUrl, showDeleteButton = true, onDelete = {
+                                        viewModel.deleteBook(book)
+                                    })
+                                }
+                            }
+                        }
+                        is MainViewModel.LocalState.Error -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(state.message)
+                                }
+                            }
+                        }
+                        is MainViewModel.LocalState.Loading -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
                         }
                     }
-                }else{
-                    item {
-                        Column(verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxSize()) {
-                            Text("No Recently Viewed Books")
-                        }
-                    }
-                }
             }else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
 
                 items(lazyPagingItems.itemCount, key = { index ->
                     lazyPagingItems.peek(index)?.key ?: index
@@ -185,6 +241,14 @@ fun SearchScreenUI(viewModel: MainViewModel = hiltViewModel(),navController: Nav
             }
         }
     }
+    SnackbarHost(hostState = snackState){
+        Snackbar(modifier = Modifier.height(25.dp),containerColor = MaterialTheme.colorScheme.primaryContainer) {
+            Text(
+                text = "Book removed.", style = MaterialTheme.typography.labelSmall.copy(fontStyle = FontStyle.Italic, fontWeight = FontWeight.Normal), modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+    } }
 }
 
 

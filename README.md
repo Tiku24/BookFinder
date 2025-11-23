@@ -22,6 +22,7 @@ BookFinder is a modern Android application built to help users discover and keep
 - **Recent History:** The app automatically saves viewed books to a local database for quick access later.
 - **Offline-First Details:** Book details are loaded from the local database first for a fast, offline-capable experience.
 - **Delete History:** Users can remove books from their “Recently Viewed” list.
+- **Light & Dark Theme:** The app fully supports both light and dark modes for a comfortable viewing experience.
 
 ---
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.bookfinder.MainViewModel
@@ -36,24 +37,54 @@ import com.example.bookfinder.data.model.searchresponse.Doc
 
 @Composable
 fun LocalDetailScreenUI(title: String, viewModel: MainViewModel, navController: NavController) {
-    val state by viewModel.localBookDetail.collectAsState()
+    val localState by viewModel.localDetail.collectAsState()
+
     LaunchedEffect(title) {
         viewModel.getBookDetailByTitle(title)
     }
-    if (state == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
+
+    when(val state = localState){
+        is MainViewModel.LocalDetailState.Empty -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("No data available")
+                }
+            }
         }
-    } else {
-        DetailScreenContent(book = Doc(
-            title = state?.title ?: "N/A",
-            author_name = listOf(state?.author ?: "N/A"),
-            first_publish_year = state?.year?.toIntOrNull(),
-            language = listOf(state?.language ?: "N/A"),
-        ), onBackClicked = {navController.popBackStack()}, imageUrl = state?.imageUrl)
+        is MainViewModel.LocalDetailState.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        is MainViewModel.LocalDetailState.Content -> {
+            val book = state.books
+            DetailScreenContent(book = Doc(
+                title = book.title,
+                author_name = listOf(book.author),
+                first_publish_year = book.year.toIntOrNull(),
+                language = listOf(book.language),
+            ), onBackClicked = {navController.popBackStack()}, imageUrl = book.imageUrl
+            )
+        }
+        is MainViewModel.LocalDetailState.Error -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(state.message)
+                }
+            }
+        }
     }
 }
 
@@ -84,7 +115,7 @@ fun DetailScreenUI(title: String, viewModel: MainViewModel, navController: NavCo
                         author = book.author_name.firstOrNull() ?: "N/A",
                         language = book.language.firstOrNull() ?: "N/A",
                         year = book.first_publish_year.toString(),
-                        imageUrl = book.cover_i?.let { "https://covers.openlibrary.org/b/id/$it-L.jpg" } ?: "N/A"
+                        imageUrl = book.cover_i?.let { "https://covers.openlibrary.org/b/id/$it-M.jpg" } ?: "N/A"
                     ))
                 }
                 DetailScreenContent(book = book, onBackClicked = { navController.popBackStack() })
@@ -129,7 +160,7 @@ private fun DetailScreenContent(book: Doc,imageUrl: String? = null, onBackClicke
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val imageUrl = imageUrl ?: "https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg"
+        val imageUrl = imageUrl ?: "https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg"
         Box(
             modifier = Modifier
                 .fillMaxWidth()
