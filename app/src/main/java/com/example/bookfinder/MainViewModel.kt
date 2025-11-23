@@ -21,6 +21,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.collections.addAll
@@ -49,9 +51,8 @@ class MainViewModel @Inject constructor(private val repo: Repo): ViewModel() {
     private val _localDetail = MutableStateFlow<LocalDetailState>(LocalDetailState.Loading)
     val localDetail = _localDetail.asStateFlow()
 
-    val getSavedBook = MutableStateFlow<List<BookEntity>>(emptyList())
-    private val _localBookDetail = MutableStateFlow<BookEntity?>(null)
-    val localBookDetail = _localBookDetail.asStateFlow()
+    private val _localEvent = MutableSharedFlow<LocalEvent>()
+    val localEvent = _localEvent
 
     private val _query = MutableStateFlow("")
     val query = _query.asStateFlow()
@@ -61,7 +62,6 @@ class MainViewModel @Inject constructor(private val repo: Repo): ViewModel() {
     }
 
     init {
-        getSavedBook()
         getLocalCachedBooks()
     }
 
@@ -117,13 +117,6 @@ class MainViewModel @Inject constructor(private val repo: Repo): ViewModel() {
         }
     }
 
-    fun getSavedBook() = viewModelScope.launch(Dispatchers.IO) {
-        repo.getSavedBooks().collectLatest{
-            getSavedBook.value = it
-            Log.d("saved", "getSavedBook: $it")
-        }
-    }
-
     fun getLocalCachedBooks(){
         viewModelScope.launch {
             repo.getSavedBooks()
@@ -143,8 +136,18 @@ class MainViewModel @Inject constructor(private val repo: Repo): ViewModel() {
         }
     }
 
-    fun deleteBook(bookEntity: BookEntity) = viewModelScope.launch(Dispatchers.IO) {
-        repo.deleteBook(bookEntity)
+    fun deleteBook(bookEntity: BookEntity) {
+        viewModelScope.launch(Dispatchers.IO){
+            runCatching {
+                repo.deleteBook(bookEntity)
+            }.onSuccess {
+                _localEvent.emit(LocalEvent.OnBookDelete)
+            }.onFailure { throwable ->
+                val msg = throwable.message ?: "Unknown error"
+                _uiState.update { LocalState.Error(throwable.message ?: msg) }
+                _localEvent.emit(LocalEvent.ShowError(msg))
+            }
+        }
     }
 
     fun getBookDetailByTitle(title: String){
@@ -194,5 +197,10 @@ class MainViewModel @Inject constructor(private val repo: Repo): ViewModel() {
         data class Content(val books: BookEntity) : LocalDetailState()
         data object Empty : LocalDetailState()
         data class Error(val message: String) : LocalDetailState()
+    }
+
+    sealed class LocalEvent{
+        data object OnBookDelete : LocalEvent()
+        data class ShowError(val message: String) : LocalEvent()
     }
 }
