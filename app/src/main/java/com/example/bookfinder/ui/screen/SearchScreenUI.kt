@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +54,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.example.bookfinder.MainViewModel
+import com.example.bookfinder.R
 import com.example.bookfinder.data.model.searchresponse.Doc
 import com.example.bookfinder.ui.navigation.DetailScreen
 import com.example.bookfinder.ui.navigation.LocalDetailScreen
@@ -275,7 +277,9 @@ fun BookList(books: Doc, imageUrl: String?=null, showDeleteButton: Boolean = fal
                 modifier = Modifier
                     .height(90.dp)
                     .width(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp)),
+                placeholder = painterResource(id = R.drawable.file),
+                error = painterResource(R.drawable.file)
             )
             Spacer(Modifier.width(16.dp))
 

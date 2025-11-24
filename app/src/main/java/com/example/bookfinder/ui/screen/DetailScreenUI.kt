@@ -172,7 +172,9 @@ private fun DetailScreenContent(book: Doc,imageUrl: String? = null, onBackClicke
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(radius = 8.dp)
+                    .blur(radius = 8.dp),
+                placeholder = painterResource(id = R.drawable.file),
+                error = painterResource(R.drawable.file)
             )
 
             Box(
@@ -211,7 +213,9 @@ private fun DetailScreenContent(book: Doc,imageUrl: String? = null, onBackClicke
             modifier = Modifier
                 .height(250.dp)
                 .offset(y = (-150).dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp)),
+            placeholder = painterResource(id = R.drawable.file),
+            error = painterResource(R.drawable.file)
         )
 
 
